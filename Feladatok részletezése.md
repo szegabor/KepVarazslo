@@ -1,12 +1,12 @@
 # KepVarazslo
 A KépVarázsló egy mesterséges intelligencián alapuló képfeldolgozó rendszer, amely képes azonosítani ugyanarról a látványvilágról készült képeket, kiválasztani a legjobb felvételeket, és több kép felhasználásával javítani a végeredmény minőségét. Célja, hogy automatizált módszerekkel növelje a képi tartalmak vizuális minőségét és relevanciáját.
 
--felismeri ugyanarról a látvány világról készült képeket
--a megegyező felvételek közül kiválasztja a legjobb felvételeket
--több kép felhasználásával kísérletet tesz egy jobb kép előállítására
--felismeri a különféle képalkotási hibákat mint elmosódás túlexponálás stb
--javít ezek minőségén 
--képeket törlésre javasol ahol nem jó a minőség
+- felismeri ugyanarról a látvány világról készült képeket.
+- a megegyező felvételek közül kiválasztja a legjobb felvételeket.
+- több kép felhasználásával kísérletet tesz egy jobb kép előállítására.
+- felismeri a különféle képalkotási hibákat mint elmosódás túlexponálás stb.
+- javít ezek minőségén.
+- képeket törlésre javasol ahol nem jó a minőség.
 
 áttekintés minden  feladattípusról:
 
