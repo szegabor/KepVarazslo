@@ -1,0 +1,146 @@
+import torch
+import torchvision.transforms as transforms
+from torchvision.models import resnet50, ResNet50_Weights
+import torchvision.models as models
+from PIL import Image
+from scipy.spatial.distance import cosine
+import cv2
+import os
+import numpy as np  
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import DBSCAN
+
+import torch
+
+#optimális GPU futási konfiguráció
+torch.backends.cudnn.benchmark = True
+
+# GPU detektálása (CUDA vagy ROCm esetén)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# ResNet50 modell inicializálása és áthelyezése a GPU-ra (ha elérhető)
+model = models.resnet50(pretrained=True)
+model = torch.nn.Sequential(*list(model.children())[:-1])  # Osztályozási rétegek eltávolítása
+model = model.to(device)  # GPU-ra helyezzük a modellt, ha elérhető
+
+# Jellemzők kinyerése GPU-n, ha elérhető
+def extract_deep_features(self, image_path):
+    """Mélytanulási modell segítségével jellemzővektor kinyerése GPU-n, ha elérhető."""
+    image = Image.open(image_path).convert("RGB")
+    image = self.transform(image).unsqueeze(0).to(device)  # GPU-ra helyezzük a képet
+    with torch.no_grad():
+        features = self.model(image).squeeze().cpu().numpy()  # GPU számítás után vissza CPU-ra
+    return features
+
+
+class ImageComparatorAI:
+
+    def __init__(self):
+        
+        """Inicializál egy előképzett ResNet modellt, hogy jellemzőket nyerjen ki a képekből."""
+        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)  # Frissített 'weights' paraméter használata
+        self.model.eval()
+        self.model = torch.nn.Sequential(*list(self.model.children())[:-1])  # Osztályozási rétegek eltávolítása
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+    def extract_deep_features(self, image_path):
+        """Mélytanulási modell segítségével jellemzővektor kinyerése."""
+        image = Image.open(image_path).convert("RGB")
+        image = self.transform(image).unsqueeze(0)
+        with torch.no_grad():
+            features = self.model(image).squeeze().numpy()
+        return features
+
+    def extract_orb_features(self, img1_path, img2_path):
+        """Lokális jellemzőpontok összehasonlítása ORB algoritmussal."""
+        orb = cv2.ORB_create()
+
+        # Képek betöltése és jellemzőpontok kinyerése
+        img1 = cv2.imread(img1_path, 0)  # Grayscale
+        img2 = cv2.imread(img2_path, 0)  # Grayscale
+        kp1, des1 = orb.detectAndCompute(img1, None)
+        kp2, des2 = orb.detectAndCompute(img2, None)
+
+        # Ellenőrizzük, hogy mindkét deszkriptor nem None
+        if des1 is None or des2 is None:
+            return 0, []  # Nincs egyezés, ha egyik kép sem tartalmaz jellemzőpontokat
+
+        # Jellemzőpontok összehasonlítása
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = bf.match(des1, des2)
+
+        return len(matches), matches
+
+
+    def compare_images(self, img1_path, img2_path):
+        """Képek összehasonlítása globális és lokális jellemzők alapján."""
+        # 1. Mélytanulási jellemzők alapján történő összehasonlítás
+        features1 = self.extract_deep_features(img1_path)
+        features2 = self.extract_deep_features(img2_path)
+        deep_similarity = 1 - cosine(features1, features2)  # Koszinusz hasonlóság
+
+        # 2. ORB jellemzőpontok alapján történő összehasonlítás
+        num_matches, matches = self.extract_orb_features(img1_path, img2_path)
+
+        # Az eredmény kombinálása
+        combined_similarity = (deep_similarity * 0.7) + ((num_matches / max(len(matches), 1)) * 0.3)  # Súlyozott kombináció
+        return combined_similarity
+
+    def build_similarity_matrix(self, image_paths):
+        """Hasonlósági mátrix létrehozása képek között."""
+        n = len(image_paths)
+        similarity_matrix = np.zeros((n, n))
+
+        for i in range(n):
+            for j in range(i + 1, n):
+                similarity = self.compare_images(image_paths[i], image_paths[j])
+                similarity_matrix[i, j] = similarity
+                similarity_matrix[j, i] = similarity  # Szimmetrikus mátrix
+
+        return similarity_matrix
+
+def load_images_from_folder(folder_path):
+    """Betölti az összes képfájlt egy mappából."""
+    return [os.path.join(folder_path, filename) for filename in os.listdir(folder_path) if filename.endswith(('jpg', 'jpeg', 'png'))]
+
+# Példa használatra
+folder_path = "c:\\Users\\varda\\Documents\\szakdolgozat\\opencv app\\proba kod\\dataset\\skittles"
+comparator = ImageComparatorAI()
+image_paths = load_images_from_folder(folder_path)
+
+# Hasonlósági mátrix létrehozása
+similarity_matrix = comparator.build_similarity_matrix(image_paths)
+
+# Eredmények megjelenítése
+# Hasonlósági mátrix megjelenítése a konzolon
+print(similarity_matrix)
+
+# Fájlnevek előkészítése (csak a fájlnevek, nem a teljes elérési út)
+file_names = [os.path.basename(path) for path in image_paths]
+
+# Hasonlósági mátrix megjelenítése hőtérképként fájlnevekkel
+plt.figure(figsize=(10, 8))
+sns.heatmap(similarity_matrix, annot=True, cmap="coolwarm", xticklabels=file_names, yticklabels=file_names)
+plt.title("Képek közötti hasonlósági mátrix")
+plt.xticks(rotation=45, ha="right")  # A fájlnevek 45 fokban elforgatva jelennek meg az átláthatóság érdekében
+plt.tight_layout()
+plt.show()
+
+# Hasonlósági mátrix konvertálása távolsági mátrixszá
+# A DBSCAN távolsági mátrixot igényel, így 1 - similarity_matrix alakban adjuk meg a távolságokat
+distance_matrix = 1 - similarity_matrix
+
+# DBSCAN alkalmazása
+# eps: a távolságküszöb (kísérletezz ezzel a paraméterrel)
+# min_samples: minimum pontok száma, amelyek egy klasztert alkotnak
+db = DBSCAN(eps=0.15, min_samples=2, metric='precomputed')  # 'precomputed' metrikát használunk, mert mátrixunk már távolságmátrix
+clusters = db.fit_predict(distance_matrix)
+
+# Klaszterek megjelenítése fájlnevekkel
+for i, cluster_id in enumerate(clusters):
+    print(f"Kép: {os.path.basename(image_paths[i])}, Klaszter: {cluster_id}")
