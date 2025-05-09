@@ -16,15 +16,14 @@ különböző szögből, fényviszonyok között, vagy kisebb variációkkal ké
 A pixelek közvetlen összehasonlítása nem lenne megbízható, ezért fejlettebb módszerekre van szükség.
 
 # Megvalósítás:
-- Előképzett mélytanulási modellek** (pl. **ResNet, EfficientNet**) használata jellemzők kinyerésére. A modell képes a képek magas szintű jellemzőit (például formákat, mintákat) felismerni, és kevésbé érzékeny a kisebb változásokra (pl. eltérő szög).
-- Klaszterezési algoritmusok** (pl. **DBSCAN, K-means**): Miután kinyertük a képek jellemzőit, a képeket ezek alapján csoportosítjuk. A klaszterekbe sorolt képek ugyanarról a látványvilágról készültek.
-
+- Előképzett mélytanulási modellek (pl. **ResNet, EfficientNet**) használata jellemzők kinyerésére. A modell képes a képek magas szintű jellemzőit (például formákat, mintákat) felismerni, és kevésbé érzékeny a kisebb változásokra (pl. eltérő szög).
+- Klaszterezési algoritmusok (pl. **DBSCAN, K-means**): Miután kinyertük a képek jellemzőit, a képeket ezek alapján csoportosítjuk. A klaszterekbe sorolt képek ugyanarról a látványvilágról készültek.
 - ResNet-típusú modellel jellemzők kinyerése a képekről.
 - Jellemzők klaszterezése DBSCAN vagy K-means algoritmussal.
 
 # 2. **A megegyező felvételek közül kiválasztja a legjobb felvételeket**
 
-a megegyező látványvilágról készült több kép közül a legjobb minőségűt válasszuk ki. A minőségi szempontok közé tartozhat a kép élessége, színtelítettsége, expozíciója stb.
+a megegyező látványvilágról készült több kép közül a legjobb minőségűt válasszuk ki. A minőségi szempontok közé tartozhat a képek élessége, színtelítettsége, expozíciója stb.
 
 # Megvalósítás:
 - **Minőségmérés metrikákkal**: Metrikák használata, amelyekkel a képek élessége, kontrasztja, expozíciója mérhető.
@@ -36,18 +35,13 @@ a megegyező látványvilágról készült több kép közül a legjobb minősé
 
 # 3. **Több kép felhasználásával kísérletet tesz egy jobb kép előállítására**
 
-több hasonló kép felhasználásával egy "kombinált" képet állít elő, ami jobb minőségű, mint az egyes eredeti képek.
-
 # Megvalósítás:
 - **Képösszevonás (Image Stacking)**: Több képet kombinálhatunk úgy, hogy a legjobb tulajdonságokat egyesítjük. A technikák közé tartozik az **átlagolás** vagy a **legélesebb részek kiválasztása** minden képből.
-- **HDR képalkotás (High Dynamic Range)**: Ha különböző expozícióval készült képeink vannak, akkor a **HDR technikával** egyesíthetjük a különböző képeket, hogy nagyobb dinamikatartományú képet hozzunk létre.
-
 - Képátlagolás minden pixelnél, vagy a legjobb pixelek kiválasztása több képből.
-- HDR algoritmus használata, ha eltérő expozíciójú képekkel dolgozunk.
 
 # 4. **Felismeri a különféle képalkotási hibákat mint elmosódás, túlexponálás stb.**
 
-Ez a feladat a képekben található hibák (pl. homályosság, rossz expozíció) automatikus felismerésére irányul.
+Ez a feladat a képekben található hibák (pl. homályosság, rossz expozíció).
 
 - **Elmosódás felismerése**: A kép **Laplacian varianciájának** elemzése segítségével mérhetjük, hogy mennyire homályos a kép. Minél alacsonyabb a variancia, annál homályosabb a kép.
 - **Túlexponálás/alulexponálás**: A kép hisztogramjának elemzése: ha a képben sok nagyon világos vagy nagyon sötét pixel van, akkor valószínűleg rosszul exponált.
